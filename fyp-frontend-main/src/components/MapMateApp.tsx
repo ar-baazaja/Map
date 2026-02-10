@@ -26,7 +26,7 @@ function MapMateAppContent() {
   const [isDestinationListOpen, setIsDestinationListOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const [showMap, setShowMap] = useState(true);
+  const [showMap, setShowMap] = useState(false);
   const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null);
   const [isStartLocationModalOpen, setIsStartLocationModalOpen] = useState(false);
   const [isStartPickerOpen, setIsStartPickerOpen] = useState(false);
@@ -53,6 +53,7 @@ function MapMateAppContent() {
     if (!selectedDestination) return;
     startNavigation(selectedDestination);
     setIsStartLocationModalOpen(false);
+    setShowMap(false);
   };
 
   const startWithPickedLocation = () => {
@@ -67,7 +68,14 @@ function MapMateAppContent() {
     setLocalizationMode('Simulated');
     startNavigation(selectedDestination, coord);
     setIsStartPickerOpen(false);
+    setShowMap(false);
   };
+
+  React.useEffect(() => {
+    if (isNavigating) {
+      setShowMap(false);
+    }
+  }, [isNavigating]);
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#0A0E14]">
@@ -78,49 +86,60 @@ function MapMateAppContent() {
         <ARView />
       )}
 
-      {/* Status & Controls */}
-      <TrackingIndicator />
-      
       {/* Current Location Display */}
-      <div className="absolute top-20 left-6 z-20 px-4 py-3 rounded-lg backdrop-blur-[20px] max-w-xs">
-        <div className="text-xs font-mono text-[#00E5FF] mb-1">
-          CURRENT LOCATION
+      {!isNavigating && (
+        <div className="absolute top-20 left-4 sm:left-6 z-20 px-3 py-2 rounded-lg backdrop-blur-[20px] max-w-[75vw]">
+          <div className="text-[10px] font-mono text-[#00E5FF] mb-1">
+            CURRENT LOCATION
+          </div>
+          <div className="text-sm font-bold text-white">
+            {localizationMode === 'MIDAS Classification' 
+              ? `${currentPosition.x.toFixed(0)}, ${currentPosition.y.toFixed(0)}`
+              : localizationMode === 'GPS' 
+              ? `GPS: ${currentPosition.x.toFixed(1)}, ${currentPosition.y.toFixed(1)}`
+              : `Sim: ${currentPosition.x.toFixed(0)}, ${currentPosition.y.toFixed(0)}`
+            }
+          </div>
+          <div className="text-[10px] text-[#00E5FF80]">
+            {localizationMode}
+          </div>
         </div>
-        <div className="text-lg font-bold text-white">
-          {localizationMode === 'MIDAS Classification' 
-            ? `${currentPosition.x.toFixed(0)}, ${currentPosition.y.toFixed(0)}`
-            : localizationMode === 'GPS' 
-            ? `GPS: ${currentPosition.x.toFixed(1)}, ${currentPosition.y.toFixed(1)}`
-            : `Sim: ${currentPosition.x.toFixed(0)}, ${currentPosition.y.toFixed(0)}`
-          }
-        </div>
-        <div className="text-xs text-[#00E5FF80]">
-          {localizationMode}
-        </div>
-      </div>
+      )}
       
       {/* View Toggle Button */}
-      <button
-        onClick={() => setShowMap(!showMap)}
-        className="absolute top-4 right-4 px-4 py-2 rounded-lg backdrop-blur-[20px] text-sm font-medium transition-all z-20"
-        style={{
-          background: 'rgba(15, 25, 35, 0.9)',
-          border: '1px solid rgba(0, 229, 255, 0.4)',
-          color: '#00E5FF',
-          boxShadow: '0 4px 20px rgba(0, 229, 255, 0.2)',
-        }}
-      >
-        {showMap ? '🎯 AR View' : '🗺️ Map View'}
-      </button>
+      {!isNavigating && !isStartPickerOpen && (
+        <button
+          onClick={() => setShowMap(!showMap)}
+          className="absolute top-4 right-4 px-4 py-2 rounded-lg backdrop-blur-[20px] text-sm font-medium transition-all z-20"
+          style={{
+            background: 'rgba(15, 25, 35, 0.9)',
+            border: '1px solid rgba(0, 229, 255, 0.4)',
+            color: '#00E5FF',
+            boxShadow: '0 4px 20px rgba(0, 229, 255, 0.2)',
+          }}
+        >
+          {showMap ? '🎯 AR View' : '🗺️ Map View'}
+        </button>
+      )}
 
-      <InfoButton onClick={() => setIsAboutOpen(true)} />
-      <DestinationsButton onClick={() => setIsDestinationListOpen(true)} />
+      <div
+        className="absolute top-0 left-0 right-0 z-30 px-3"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <InfoButton onClick={() => setIsAboutOpen(true)} />
+          <TrackingIndicator />
+          <DestinationsButton onClick={() => setIsDestinationListOpen(true)} />
+        </div>
+      </div>
       
       {/* Updated Capture Button */}
       <button
         onClick={() => setIsCameraOpen(true)}
-        className="absolute bottom-6 right-6 z-30 w-16 h-16 rounded-full backdrop-blur-[20px] flex items-center justify-center transition-all"
+        className="absolute z-30 w-14 h-14 sm:w-16 sm:h-16 rounded-full backdrop-blur-[20px] flex items-center justify-center transition-all"
         style={{
+          bottom: 'calc(env(safe-area-inset-bottom) + 16px)',
+          right: '16px',
           background: 'rgba(15, 25, 35, 0.9)',
           border: '1px solid rgba(0, 229, 255, 0.4)',
           boxShadow: '0 4px 20px rgba(0, 229, 255, 0.3)',

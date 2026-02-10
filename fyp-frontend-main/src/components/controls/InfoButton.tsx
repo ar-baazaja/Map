@@ -9,12 +9,12 @@ interface InfoButtonProps {
 export function InfoButton({ onClick }: InfoButtonProps) {
   return (
     <motion.button
-      className="absolute top-6 right-6 z-30 w-10 h-10 rounded-full backdrop-blur-[20px] flex items-center justify-center"
+      className="w-10 h-10 rounded-full backdrop-blur-[20px] flex items-center justify-center flex-shrink-0"
       style={{
-        background: 'rgba(15, 25, 35, 0.7)',
+        backgroundColor: 'rgba(15, 25, 35, 0.7)',
         border: '1px solid rgba(0, 229, 255, 0.3)',
         boxShadow: '0 0 20px rgba(0, 229, 255, 0.4)',
-      }}
+      } as React.CSSProperties}
       whileTap={{ scale: 0.9 }}
       onClick={onClick}
       initial={{ opacity: 0, x: 20 }}
@@ -22,7 +22,7 @@ export function InfoButton({ onClick }: InfoButtonProps) {
       transition={{ delay: 0.3 }}
       whileHover={{
         boxShadow: '0 0 30px rgba(0, 229, 255, 0.6)',
-      }}
+      } as any}
     >
       <Info className="w-5 h-5 text-[#00E5FF]" />
     </motion.button>

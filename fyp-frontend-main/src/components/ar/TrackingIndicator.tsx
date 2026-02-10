@@ -16,13 +16,13 @@ export function TrackingIndicator() {
 
   return (
     <motion.div
-      className="absolute top-6 right-6 z-30"
+      className="flex-1 flex justify-center"
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.3 }}
     >
       <div
-        className="px-4 py-2 rounded-full backdrop-blur-[20px] flex items-center gap-2"
+        className="px-3 py-1.5 rounded-full backdrop-blur-[20px] flex items-center gap-2 max-w-[50vw]"
         style={{
           background: 'rgba(15, 25, 35, 0.9)',
           border: `1px solid ${statusColor}40`,
@@ -42,7 +42,7 @@ export function TrackingIndicator() {
           transition={{ duration: 2, repeat: Infinity }}
         />
         <span
-          className="text-sm font-medium"
+          className="text-xs font-medium truncate"
           style={{
             fontFamily: 'Space Grotesk, sans-serif',
             color: statusColor,
@@ -52,7 +52,7 @@ export function TrackingIndicator() {
         </span>
         {captureConfidence !== null && (
           <span
-            className="text-xs ml-1"
+            className="text-[10px] ml-1"
             style={{
               fontFamily: 'JetBrains Mono, monospace',
               color: captureConfidence >= 0.6 ? '#00FF88' : '#FFB800',
