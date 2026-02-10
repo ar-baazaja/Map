@@ -1,11 +1,12 @@
 import React, { useRef, useEffect } from 'react';
 import { useLocalization } from '@/contexts/LocalizationContext';
 import { useNavigation } from '@/contexts/NavigationContext';
+import { Coordinate } from '@/types/navigation';
 
 export function MapView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { currentPosition, localizationMode } = useLocalization();
-  const { currentDestination, isNavigating } = useNavigation();
+  const { currentDestination, isNavigating, routeWaypoints } = useNavigation();
 
   useEffect(() => {
     console.log('MapView component mounted');
@@ -119,6 +120,11 @@ export function MapView() {
           ctx.strokeStyle = '#ffffff';
           ctx.lineWidth = 2;
           ctx.stroke();
+          
+          // Draw navigation path
+          if (routeWaypoints.length > 1) {
+            drawNavigationPath(ctx, routeWaypoints, mapImage, mapWidth, mapHeight, canvas);
+          }
         }
       }
 
@@ -133,13 +139,38 @@ export function MapView() {
       ctx.font = '14px JetBrains Mono, monospace';
       ctx.fillText(`Mode: ${localizationMode}`, 20, 32);
     };
+    
+    const drawNavigationPath = (ctx: CanvasRenderingContext2D, waypoints: Coordinate[], mapImage: HTMLImageElement, mapWidth: number, mapHeight: number, canvas: HTMLCanvasElement) => {
+      const offsetX = (canvas.width - mapWidth) / 2;
+      const offsetY = (canvas.height - mapHeight) / 2 + 40;
+      
+      ctx.strokeStyle = '#00E5FF';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([8, 4]);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      
+      ctx.beginPath();
+      waypoints.forEach((point, index) => {
+        const x = offsetX + (point.x / mapImage.width) * mapWidth;
+        const y = offsetY + (point.y / mapImage.height) * mapHeight;
+        if (index === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+    };
+    
     mapImage.onerror = () => {
       console.error('Failed to load map image');
       ctx.fillStyle = '#FF6B6B';
       ctx.fillText('Map image failed to load', canvas.width / 2, canvas.height / 2);
     };
     mapImage.src = '/maps/campus_map.png';
-  }, [currentPosition, localizationMode, currentDestination, isNavigating]);
+  }, [currentPosition, localizationMode, currentDestination, isNavigating, routeWaypoints]);
 
   return (
     <canvas

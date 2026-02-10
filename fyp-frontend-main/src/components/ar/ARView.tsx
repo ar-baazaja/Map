@@ -2,12 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useLocalization } from '@/contexts/LocalizationContext';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { MiniMap } from '@/components/ar/MiniMap';
+import { Coordinate } from '@/types/navigation';
 
 export function ARView() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { currentPosition } = useLocalization();
-  const { currentDestination, isNavigating, hasArrived } = useNavigation();
+  const { currentDestination, isNavigating, hasArrived, routeWaypoints } = useNavigation();
   const [cameraActive, setCameraActive] = useState(false);
 
   useEffect(() => {
@@ -57,6 +58,11 @@ export function ARView() {
       // Draw camera feed if active
       if (cameraActive && video.readyState === video.HAVE_ENOUGH_DATA) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Apply navigation path mask if navigating
+        if (isNavigating && routeWaypoints.length > 1) {
+          drawNavigationPath(ctx, canvas, routeWaypoints);
+        }
       } else {
         // Fallback to gradient background
         const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
@@ -76,7 +82,7 @@ export function ARView() {
     };
 
     drawFrame();
-  }, [cameraActive, currentPosition, currentDestination, isNavigating, hasArrived]);
+  }, [cameraActive, currentPosition, currentDestination, isNavigating, hasArrived, routeWaypoints]);
 
   const drawArrivedMessage = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
     const centerX = canvas.width / 2;
@@ -97,6 +103,42 @@ export function ARView() {
     ctx.fillText('Arrived', centerX, centerY);
 
     ctx.shadowBlur = 0;
+  };
+
+  const drawNavigationPath = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, waypoints: Coordinate[]) => {
+    // Create a dark overlay outside the path corridor
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw path corridor
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.lineWidth = 80;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    ctx.beginPath();
+    waypoints.forEach((point, index) => {
+      const x = (point.x / 1000) * canvas.width;
+      const y = (point.y / 1000) * canvas.height;
+      if (index === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    });
+    ctx.stroke();
+    
+    // Draw path outline
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = '#00E5FF';
+    ctx.lineWidth = 4;
+    ctx.setLineDash([10, 5]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    ctx.restore();
   };
 
   return (

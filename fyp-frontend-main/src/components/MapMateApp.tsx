@@ -11,8 +11,7 @@ import { CameraCapture } from '@/components/CameraCapture';
 import { DebugOverlay } from '@/components/ar/DebugOverlay';
 import { DestinationList } from '@/components/modals/DestinationList';
 import { AboutScreen } from '@/components/modals/AboutScreen';
-import { StartLocationModal } from '@/components/modals/StartLocationModal';
-import { StartLocationPicker } from '@/components/modals/StartLocationPicker';
+import { StartLocationList } from '@/components/modals/StartLocationList';
 import { DestinationsButton } from '@/components/controls/DestinationsButton';
 import { InfoButton } from '@/components/controls/InfoButton';
 import { useLocalization } from '@/contexts/LocalizationContext';
@@ -28,8 +27,7 @@ function MapMateAppContent() {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null);
-  const [isStartLocationModalOpen, setIsStartLocationModalOpen] = useState(false);
-  const [isStartPickerOpen, setIsStartPickerOpen] = useState(false);
+  const [isStartLocationListOpen, setIsStartLocationListOpen] = useState(false);
 
   const handleCameraCapture = (imageData: string) => {
     console.log('Camera capture triggered');
@@ -44,31 +42,20 @@ function MapMateAppContent() {
     console.log('Environment:', import.meta.env);
   }, []);
 
+  const handleStartLocationSelected = (startDestination: Destination) => {
+    updatePosition(startDestination.coordinate);
+    setLocalizationMode('Simulated');
+    if (selectedDestination) {
+      startNavigation(selectedDestination, startDestination.coordinate);
+    }
+  };
+
   const handleDestinationSelected = (destination: Destination) => {
     setSelectedDestination(destination);
-    setIsStartLocationModalOpen(true);
-  };
-
-  const startWithCurrentLocation = () => {
-    if (!selectedDestination) return;
-    startNavigation(selectedDestination);
-    setIsStartLocationModalOpen(false);
-    setShowMap(false);
-  };
-
-  const startWithPickedLocation = () => {
-    setIsStartLocationModalOpen(false);
-    setIsStartPickerOpen(true);
-    setShowMap(true);
-  };
-
-  const handlePickedStart = (coord: Coordinate) => {
-    if (!selectedDestination) return;
-    updatePosition(coord);
-    setLocalizationMode('Simulated');
-    startNavigation(selectedDestination, coord);
-    setIsStartPickerOpen(false);
-    setShowMap(false);
+    if (currentPosition.x !== 0 || currentPosition.y !== 0) {
+      // If we already have a position, start navigation directly
+      startNavigation(destination);
+    }
   };
 
   React.useEffect(() => {
@@ -79,50 +66,56 @@ function MapMateAppContent() {
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#0A0E14]">
-      {/* Toggle between Map and AR View */}
-      {showMap ? (
-        <MapView />
-      ) : (
-        <ARView />
+      {/* Camera always on; AR view as base layer */}
+      <ARView />
+      
+      {/* Side map as secondary reference (shown when navigating) */}
+      {isNavigating && (
+        <div className="absolute top-0 right-0 w-1/3 h-full z-20">
+          <MapView />
+        </div>
       )}
 
       
-      {/* View Toggle Button */}
-      {!isNavigating && !isStartPickerOpen && (
+      {/* Destinations button at top right */}
+      {!isNavigating && (
+        <div
+          className="absolute top-0 right-0 z-30 px-3"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }}
+        >
+          <DestinationsButton onClick={() => setIsDestinationListOpen(true)} />
+        </div>
+      )}
+
+      {/* Floating Start Point button at bottom center */}
+      {!isNavigating && (
         <button
-          onClick={() => setShowMap(!showMap)}
-          className="absolute top-4 right-4 px-4 py-2 rounded-lg backdrop-blur-[20px] text-sm font-medium transition-all z-20"
+          onClick={() => setIsStartLocationListOpen(true)}
+          className="absolute z-30 px-4 py-3 rounded-full backdrop-blur-[20px] flex items-center gap-2 transition-all"
           style={{
+            bottom: 'calc(env(safe-area-inset-bottom) + 16px)',
+            left: '50%',
+            transform: 'translateX(-50%)',
             background: 'rgba(15, 25, 35, 0.9)',
             border: '1px solid rgba(0, 229, 255, 0.4)',
             color: '#00E5FF',
-            boxShadow: '0 4px 20px rgba(0, 229, 255, 0.2)',
+            boxShadow: '0 4px 20px rgba(0, 229, 255, 0.3)',
           }}
         >
-          {showMap ? '🎯 AR View' : '🗺️ Map View'}
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            viewBox="0 0 24 24"
+          >
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+          </svg>
+          <span className="text-sm font-medium">Start Point</span>
         </button>
       )}
-
-      <div
-        className="absolute top-0 left-0 right-0 z-30 px-3"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <button
-            onClick={() => setIsStartLocationModalOpen(true)}
-            className="px-3 py-2 rounded-lg backdrop-blur-[20px] text-xs font-medium transition-all"
-            style={{
-              background: 'rgba(15, 25, 35, 0.9)',
-              border: '1px solid rgba(0, 229, 255, 0.4)',
-              color: '#00E5FF',
-              boxShadow: '0 4px 20px rgba(0, 229, 255, 0.2)',
-            }}
-          >
-            Start Point
-          </button>
-          <DestinationsButton onClick={() => setIsDestinationListOpen(true)} />
-        </div>
-      </div>
       
       {/* Updated Capture Button */}
       <button
@@ -159,17 +152,10 @@ function MapMateAppContent() {
         }}
       />
 
-      <StartLocationModal
-        isOpen={isStartLocationModalOpen}
-        onClose={() => setIsStartLocationModalOpen(false)}
-        onUseCurrent={startWithCurrentLocation}
-        onPickOnMap={startWithPickedLocation}
-      />
-
-      <StartLocationPicker
-        isOpen={isStartPickerOpen}
-        onClose={() => setIsStartPickerOpen(false)}
-        onPick={handlePickedStart}
+      <StartLocationList
+        isOpen={isStartLocationListOpen}
+        onClose={() => setIsStartLocationListOpen(false)}
+        onSelectStartLocation={handleStartLocationSelected}
       />
 
       {/* Camera Capture Modal */}
