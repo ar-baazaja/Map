@@ -86,25 +86,6 @@ function MapMateAppContent() {
         <ARView />
       )}
 
-      {/* Current Location Display */}
-      {!isNavigating && (
-        <div className="absolute top-20 left-4 sm:left-6 z-20 px-3 py-2 rounded-lg backdrop-blur-[20px] max-w-[75vw]">
-          <div className="text-[10px] font-mono text-[#00E5FF] mb-1">
-            CURRENT LOCATION
-          </div>
-          <div className="text-sm font-bold text-white">
-            {localizationMode === 'MIDAS Classification' 
-              ? `${currentPosition.x.toFixed(0)}, ${currentPosition.y.toFixed(0)}`
-              : localizationMode === 'GPS' 
-              ? `GPS: ${currentPosition.x.toFixed(1)}, ${currentPosition.y.toFixed(1)}`
-              : `Sim: ${currentPosition.x.toFixed(0)}, ${currentPosition.y.toFixed(0)}`
-            }
-          </div>
-          <div className="text-[10px] text-[#00E5FF80]">
-            {localizationMode}
-          </div>
-        </div>
-      )}
       
       {/* View Toggle Button */}
       {!isNavigating && !isStartPickerOpen && (
@@ -127,8 +108,18 @@ function MapMateAppContent() {
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }}
       >
         <div className="flex items-center justify-between gap-2">
-          <InfoButton onClick={() => setIsAboutOpen(true)} />
-          <TrackingIndicator />
+          <button
+            onClick={() => setIsStartLocationModalOpen(true)}
+            className="px-3 py-2 rounded-lg backdrop-blur-[20px] text-xs font-medium transition-all"
+            style={{
+              background: 'rgba(15, 25, 35, 0.9)',
+              border: '1px solid rgba(0, 229, 255, 0.4)',
+              color: '#00E5FF',
+              boxShadow: '0 4px 20px rgba(0, 229, 255, 0.2)',
+            }}
+          >
+            Start Point
+          </button>
           <DestinationsButton onClick={() => setIsDestinationListOpen(true)} />
         </div>
       </div>

@@ -22,17 +22,15 @@ export function StartLocationModal({ isOpen, onClose, onUseCurrent, onPickOnMap 
           />
 
           <motion.div
-            className="absolute bottom-0 left-0 right-0 z-50 rounded-t-3xl backdrop-blur-[20px] overflow-hidden"
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 rounded-2xl backdrop-blur-[20px] overflow-hidden w-[90vw] max-w-sm"
             style={{
               backgroundColor: 'rgba(15, 25, 35, 0.95)',
               border: '1px solid rgba(0, 229, 255, 0.3)',
-              borderBottom: 'none',
-              height: '36vh',
             } as React.CSSProperties}
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           >
             <div className="p-6 border-b border-[#00E5FF]/20">
               <h2
