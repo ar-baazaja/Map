@@ -2,22 +2,33 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, MapPin, Gauge, ArrowDown, Navigation } from "lucide-react";
 import LocationModal from "./LocationModal";
+import { useNavigation } from "../contexts/NavigationContext";
+import { destinations } from "../lib/api";
 
 interface ARNavigationProps {
   onBack: () => void;
 }
 
 export default function ARNavigation({ onBack }: ARNavigationProps) {
-  const [distance, setDistance] = useState(45);
-  const [accuracy, setAccuracy] = useState(92);
-  const [isNavigating, setIsNavigating] = useState(false);
   const [hasCamera, setHasCamera] = useState(false);
   const [showStartModal, setShowStartModal] = useState(false);
   const [showDestinationModal, setShowDestinationModal] = useState(false);
-  const [startPoint, setStartPoint] = useState<string>("");
-  const [destination, setDestination] = useState<string>("");
+  const [selectedStart, setSelectedStart] = useState<string>("");
+  const [selectedDestination, setSelectedDestination] = useState<string>("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  
+  const { 
+    isNavigating, 
+    currentPosition, 
+    currentDestination, 
+    routeWaypoints, 
+    distanceToWaypoint, 
+    hasArrived, 
+    startNavigation, 
+    stopNavigation, 
+    updatePosition 
+  } = useNavigation();
 
   useEffect(() => {
     // Request camera access
@@ -50,14 +61,25 @@ export default function ARNavigation({ onBack }: ARNavigationProps) {
   }, []);
 
   useEffect(() => {
-    if (isNavigating) {
+    if (isNavigating && routeWaypoints.length > 0) {
+      // Simulate position updates along route
       const interval = setInterval(() => {
-        setDistance((prev) => Math.max(0, prev - 1));
-        setAccuracy((prev) => Math.min(99, prev + Math.random() * 2 - 1));
-      }, 1000);
+        // Simple simulation: move towards next waypoint
+        const nextIndex = Math.min(routeWaypoints.length - 1, Math.floor(Math.random() * routeWaypoints.length));
+        const nextWaypoint = routeWaypoints[nextIndex];
+        
+        // Add some noise to simulate real positioning
+        const noisyPosition = {
+          x: nextWaypoint.x + (Math.random() - 0.5) * 10,
+          y: nextWaypoint.y + (Math.random() - 0.5) * 10
+        };
+        
+        updatePosition(noisyPosition);
+      }, 2000);
+      
       return () => clearInterval(interval);
     }
-  }, [isNavigating]);
+  }, [isNavigating, routeWaypoints, updatePosition]);
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden" style={{ background: "#1E1B4B" }}>
@@ -108,14 +130,14 @@ export default function ARNavigation({ onBack }: ARNavigationProps) {
               <MapPin className="w-4 h-4 text-[#23C4B8]" />
               <div>
                 <p className="text-[#F4F6FB]/70 text-[10px]">Destination</p>
-                <p className="font-bold text-[#F4F6FB]">{destination || "Select destination"}</p>
+                <p className="font-bold text-[#F4F6FB]">{currentDestination?.name || "Select destination"}</p>
               </div>
             </div>
             <div className="flex items-center gap-1.5">
               <Gauge className="w-4 h-4 text-[#23C4B8]" />
               <div>
                 <p className="text-[#F4F6FB]/70 text-[10px]">Accuracy</p>
-                <p className="font-bold text-[#23C4B8]">{accuracy.toFixed(0)}%</p>
+                <p className="font-bold text-[#23C4B8]">{Math.round(distanceToWaypoint)}m</p>
               </div>
             </div>
           </div>
@@ -130,7 +152,7 @@ export default function ARNavigation({ onBack }: ARNavigationProps) {
           animate={{ opacity: 1, scale: 1 }}
           className="glass-card rounded-full px-5 py-2 neon-glow-teal mb-4"
         >
-          <p className="text-2xl font-bold text-[#23C4B8]">{distance}m</p>
+          <p className="text-2xl font-bold text-[#23C4B8]">{Math.round(distanceToWaypoint)}m</p>
         </motion.div>
 
         {/* Animated arrow pointing direction */}
@@ -170,7 +192,9 @@ export default function ARNavigation({ onBack }: ARNavigationProps) {
           animate={{ opacity: 1 }}
           className="mt-3 glass-card rounded-lg px-4 py-2"
         >
-          <p className="text-sm font-medium text-[#F4F6FB]">Continue straight</p>
+          <p className="text-sm font-bold text-[#F4F6FB] truncate">
+            {hasArrived ? "You have arrived!" : "Follow the AR path to your destination"}
+          </p>
         </motion.div>
       </div>
 
@@ -227,10 +251,14 @@ export default function ARNavigation({ onBack }: ARNavigationProps) {
         isOpen={showStartModal}
         onClose={() => setShowStartModal(false)}
         title="Choose Start Point"
-        onSelect={(location) => {
-          setStartPoint(location);
-          if (destination) {
-            setIsNavigating(true);
+        onSelect={(locationName) => {
+          setSelectedStart(locationName);
+          const startDest = destinations.find(d => d.name === locationName);
+          if (startDest && selectedDestination) {
+            const dest = destinations.find(d => d.name === selectedDestination);
+            if (dest) {
+              startNavigation(dest, startDest.coordinate);
+            }
           }
         }}
       />
@@ -240,10 +268,14 @@ export default function ARNavigation({ onBack }: ARNavigationProps) {
         isOpen={showDestinationModal}
         onClose={() => setShowDestinationModal(false)}
         title="Choose Destination"
-        onSelect={(location) => {
-          setDestination(location);
-          if (startPoint) {
-            setIsNavigating(true);
+        onSelect={(locationName) => {
+          setSelectedDestination(locationName);
+          const dest = destinations.find(d => d.name === locationName);
+          if (dest && selectedStart) {
+            const startDest = destinations.find(d => d.name === selectedStart);
+            if (startDest) {
+              startNavigation(dest, startDest.coordinate);
+            }
           }
         }}
       />

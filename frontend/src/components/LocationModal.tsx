@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, MapPin } from "lucide-react";
+import { destinations } from "../lib/api";
 
 interface LocationModalProps {
   isOpen: boolean;
@@ -7,19 +8,6 @@ interface LocationModalProps {
   title: string;
   onSelect: (location: string) => void;
 }
-
-const locations = [
-  "Main Entrance",
-  "Conference Room A",
-  "Conference Room B",
-  "Cafeteria",
-  "Library",
-  "Parking Lot A",
-  "Parking Lot B",
-  "Emergency Exit",
-  "Reception",
-  "Elevator Bank"
-];
 
 export default function LocationModal({ isOpen, onClose, title, onSelect }: LocationModalProps) {
   return (
@@ -72,11 +60,11 @@ export default function LocationModal({ isOpen, onClose, title, onSelect }: Loca
             {/* Location List */}
             <div className="p-4 overflow-y-auto" style={{ maxHeight: "calc(60vh - 120px)" }}>
               <div className="space-y-2">
-                {locations.map((location) => (
+                {destinations.map((destination) => (
                   <motion.button
-                    key={location}
+                    key={destination.id}
                     onClick={() => {
-                      onSelect(location);
+                      onSelect(destination.name);
                       onClose();
                     }}
                     className="w-full p-4 rounded-xl text-left transition-all"
@@ -93,7 +81,7 @@ export default function LocationModal({ isOpen, onClose, title, onSelect }: Loca
                         <MapPin className="w-5 h-5 text-[#23C4B8]" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-semibold text-white">{location}</h3>
+                        <h3 className="font-semibold text-white">{destination.name}</h3>
                       </div>
                     </div>
                   </motion.button>

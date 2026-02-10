@@ -1,16 +1,17 @@
 import { Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
+import { NavigationProvider } from "./contexts/NavigationContext";
 import Home from "./components/home";
 
 function App() {
   return (
-    <Suspense fallback={<p>Loading...</p>}>
-      <>
+    <NavigationProvider>
+      <Suspense fallback={<p>Loading...</p>}>
         <Routes>
           <Route path="/" element={<Home />} />
         </Routes>
-      </>
-    </Suspense>
+      </Suspense>
+    </NavigationProvider>
   );
 }
 

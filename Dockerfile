@@ -8,15 +8,24 @@ RUN npm ci
 COPY frontend/ ./
 RUN npm run build
 
-# Runtime with just frontend served by a simple web server
-FROM nginx:alpine AS runtime
+# Build backend
+FROM python:3.11-slim AS runtime
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+WORKDIR /app
 
-# Copy built frontend
-COPY --from=frontend-build /app/dist /usr/share/nginx/html
+# System deps for opencv
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 \
+  && rm -rf /var/lib/apt/lists/*
 
-# Copy nginx config
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY backend/requirements.txt /app/backend/requirements.txt
+RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 
-EXPOSE 8080
+# Copy backend + built frontend
+COPY backend/ /app/backend/
+COPY --from=frontend-build /app/dist /app/dist
 
-CMD ["nginx", "-g", "daemon off;"]
+WORKDIR /app/backend
+
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
